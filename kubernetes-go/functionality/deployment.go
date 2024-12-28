@@ -4,35 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
-func createDeploy() {
-    // Get the user's home directory
-    homeDir, err := os.UserHomeDir()
-    if err != nil {
-        panic(fmt.Sprintf("Failed to get home directory: %v", err))
-    }
-
-    // Load kubeconfig
-    kubeconfig := filepath.Join(homeDir, ".kube", "config")
-    config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-    if err != nil {
-        panic(fmt.Sprintf("Failed to load kubeconfig: %v", err))
-    }
-
-    // Create Kubernetes clientset
-    clientset, err := kubernetes.NewForConfig(config)
-    if err != nil {
-        panic(fmt.Sprintf("Failed to create Kubernetes client: %v", err))
-    }
-
+func CreateDeploy(clientset *kubernetes.Clientset) {
     // Define the deployment
     deployment := &appsv1.Deployment{
         ObjectMeta: metav1.ObjectMeta{
@@ -69,7 +48,7 @@ func createDeploy() {
     }
 
     // Create the deployment in the "default" namespace
-    _, err = clientset.AppsV1().Deployments("default").Create(context.TODO(), deployment, metav1.CreateOptions{})
+    _, err := clientset.AppsV1().Deployments("default").Create(context.TODO(), deployment, metav1.CreateOptions{})
     if err != nil {
         fmt.Fprintf(os.Stderr, "Failed to create deployment: %v\n", err)
         os.Exit(1)
@@ -77,6 +56,23 @@ func createDeploy() {
 
     fmt.Println("Deployment created successfully!")
 }
+
+func DeleteDeploy(clientset *kubernetes.Clientset, namespace string, deployment string) {
+
+    // Define the deployment
+    deletePolicy := metav1.DeletePropagationForeground
+	err := clientset.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment, metav1.DeleteOptions{
+		PropagationPolicy: &deletePolicy,
+	})
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to delete deployment: %v\n", err)
+		os.Exit(1)
+	}
+
+    fmt.Println("Deployment deleted successfully!")
+}
+
 
 // Helper function to get a pointer to an int32
 func int32Ptr(i int32) *int32 { return &i }
