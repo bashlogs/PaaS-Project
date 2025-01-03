@@ -35,6 +35,10 @@ func main() {
 	// functionality.CreateNamespace(clientset, "mayur123")
 	// functionality.DeleteNamespace(clientset, "mayur123")
 
-	functionality.ResourceAllocation(clientset, "mayur")
+	// functionality.ResourceAllocation(clientset, "mayur")
+
+	// functionality.CreateNamespace(clientset, "project")
+
+	functionality.VolumeClaim(clientset, "project")
 }
 
