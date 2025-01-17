@@ -32,10 +32,9 @@ func main(){
 		log.Error(err)
 	}
 
+
 	// Testcases
 
 	// CreateTable()
 	// Print()
-	// JWT_Token("mayur")
-	// Query("bashlogs", "khadde")
 }
