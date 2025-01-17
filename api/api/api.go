@@ -16,12 +16,6 @@ type Error struct {
 	Message string
 }
 
-type User_Create_Response struct {
-	Message string
-	Username string
-	Token string
-}
-
 func writeError(w http.ResponseWriter, message string, code int) {
     resp := Error{
 		Code: code,
