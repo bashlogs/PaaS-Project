@@ -11,6 +11,12 @@ type Users struct {
     Password string `json:"password"`
 }
 
+type User_Create_Response struct {
+	Message string
+	Username string
+	Token string
+}
+
 type Error struct {
 	Code    int
 	Message string
