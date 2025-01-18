@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/bashlogs/PaaS_Project/api/api"
+	"github.com/bashlogs/PaaS_Project/api/internal/middleware"
 	"github.com/bashlogs/PaaS_Project/api/internal/tools"
 	log "github.com/sirupsen/logrus"
 )
@@ -34,10 +35,27 @@ func CreateAccount(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	var response = api.Users{
-		Name: param.Name,
+	token, err := middleware.JWT_Token(param.Username, param.Password)
+	if err != nil {
+		log.Error("Failed to generate token: ", err)
+		api.InternalErrorHandler(w)
+		return
+	}
+	
+	http.SetCookie(w, &http.Cookie{	
+		Name: "token",
+		Value: token,
+		HttpOnly: true,
+		MaxAge: 7200,
+		Path: "/users",
+	})
+	log.Println("Set-Cookie: token=", token)
+
+
+	var response = api.User_Create_Response{
+		Message: "Successfully Logined",
 		Username: param.Username,
-		Password: param.Password,
+		Token: token,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -47,4 +65,8 @@ func CreateAccount(w http.ResponseWriter, r *http.Request){
 		api.InternalErrorHandler(w)
 		return
 	}
+}
+
+func Dashboard(w http.ResponseWriter, r *http.Request){
+	w.Write([]byte("Welcome to the Dashboard"))
 }
