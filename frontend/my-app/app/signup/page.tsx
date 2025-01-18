@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +46,7 @@ export default function SignUpPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-center mb-4">
-              <CloudIcon className="h-12 w-12 text-primary" />
+              <CloudIcon className="h-10 w-10 text-primary" />
             </div>
             <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
             <CardDescription className="text-center">
@@ -75,7 +76,18 @@ export default function SignUpPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="transition-all duration-300 focus:ring-2 focus:ring-primary"
-                />
+              />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input 
+                  id="username" 
+                  required 
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="transition-all duration-300 focus:ring-2 focus:ring-primary"
+              />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
