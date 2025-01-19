@@ -1,12 +1,11 @@
-CREATE TABLE "users"(
-    "user_id" BIGINT NOT NULL,
+CREATE TABLE "users" (
+    "user_id" BIGSERIAL PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "username" VARCHAR(255) NOT NULL,
     "password" VARCHAR(255) NOT NULL
 );
-ALTER TABLE
-    "users" ADD PRIMARY KEY("user_id");
+
 CREATE TABLE "subscription"(
     "sub_id" BIGINT NOT NULL,
     "user_id" BIGINT NOT NULL,

@@ -6,9 +6,14 @@ import (
 )
 
 type Users struct {
-    Name string
+    Name string `json:"name"`
+	Email string `json:"email"`
     Username string `json:"username"`
     Password string `json:"password"`
+}
+
+type Token_validity struct {
+	Message string
 }
 
 type Login_user struct {

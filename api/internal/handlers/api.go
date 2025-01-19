@@ -12,5 +12,9 @@ func Handler(r *chi.Mux) {
 
 	r.Post("/signup", CreateAccount)
 	r.Post("/login", Login)
-	r.With(middleware.Authorization).Get("/dashboard", Dashboard)
+	
+	r.Route("/dashboard", func(router chi.Router){
+		router.Use(middleware.Authorization)
+		router.Get("/", Dashboard)
+	})
 }

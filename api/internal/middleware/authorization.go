@@ -12,94 +12,97 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	ErrUnauthorized = errors.New("unauthorized access")
+	ErrInvalidToken = errors.New("invalid token")
+)
 
-var ErrUnauthorized = errors.New("invalid username or tokens")
-var ErrInvalidToken = errors.New("invalid token")
+var SecretKey = []byte("khadde")
 
 func Authorization(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-		var err error
-
-		cookie, err := r.Cookie("token")
-		// fmt.Println(cookie)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("authToken")
 		if err != nil {
-			if err == http.ErrNoCookie {
-				http.Error(w, "Token cookie missing", http.StatusUnauthorized)
+			if errors.Is(err, http.ErrNoCookie) {
+				http.Error(w, "Authorization token missing", http.StatusUnauthorized)
 				return
 			}
-			log.Println("Error retrieving cookie:", err)
+			log.Error("Error retrieving cookie:", err)
 			http.Error(w, "Invalid cookie", http.StatusBadRequest)
 			return
 		}
 
 		tokenString := cookie.Value
 		if tokenString == "" {
-			http.Error(w, "Authorization token missing", http.StatusUnauthorized)
+			http.Error(w, "Authorization token is empty", http.StatusUnauthorized)
 			return
 		}
 
-		database, err := tools.ConnectToDatabase()
-		if err != nil {
-			log.Println("Database connection error:", err)
-			api.InternalErrorHandler(w)
-			return
-		}
-	
+		// Parse and validate the token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Ensure the signing method is HMAC
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return secretKey, nil
 		})
 
-		if err != nil {
-			log.Println("Invalid token:", err)
+		if err != nil || !token.Valid {
+			log.Error("Invalid token:", err)
 			api.RequestErrorHandler(w, ErrInvalidToken)
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// Verify token expiration
-
-			if exp, ok := claims["exp"].(float64); ok {
-				if time.Now().Unix() > int64(exp) {
-					log.Error("Failed to generate token: ", err)
-					api.RequestErrorHandler(w, errors.New("token has expired"))
-					return
-				}
-			} else {
-				log.Error("Invali exp date: ")
-				api.RequestErrorHandler(w, errors.New("invalid expiration in token"))
-				return 
-			}
-
-			username, ok := claims["username"].(string)
-			if !ok {
-				log.Error("Failed to insert user1: ", err)
-				api.RequestErrorHandler(w, errors.New("invalid username"))
-				return 
-			}
-
-			var password string
-			err = database.DB.QueryRow("select password from users where username=$1", username).Scan(&password)
-			if err != nil {
-				log.Error("Failed to insert user2: ", err)
-				api.RequestErrorHandler(w, errors.New("invalid username"))
-				return
-			}
-
-			if password != claims["password"] {
-				log.Error("Failed to match password: ", err)
-				api.RequestErrorHandler(w, errors.New("invalid password"))
-				return 
-			}
-			
-			next.ServeHTTP(w, r)
-		} else {
-			log.Println("Invalid token claims")
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			log.Error("Failed to parse token claims")
 			api.RequestErrorHandler(w, ErrUnauthorized)
 			return
 		}
+
+		// Validate token expiration
+		if exp, ok := claims["exp"].(float64); ok {
+			if time.Now().Unix() > int64(exp) {
+				log.Error("Token has expired")
+				api.RequestErrorHandler(w, errors.New("token has expired"))
+				return
+			}
+		} else {
+			log.Error("Invalid expiration in token")
+			api.RequestErrorHandler(w, errors.New("invalid token expiration"))
+			return
+		}
+
+		// Validate email and password against the database
+		email, ok := claims["email"].(string)
+		if !ok {
+			log.Error("Invalid email in token")
+			api.RequestErrorHandler(w, errors.New("invalid email in token"))
+			return
+		}
+
+		password := claims["password"]
+		database, err := tools.ConnectToDatabase()
+		if err != nil {
+			log.Error("Database connection error:", err)
+			api.InternalErrorHandler(w)
+			return
+		}
+
+		var storedPassword string
+		err = database.DB.QueryRow("SELECT password FROM users WHERE email=$1", email).Scan(&storedPassword)
+		if err != nil {
+			log.Error("Email not found in database:", err)
+			api.RequestErrorHandler(w, errors.New("invalid email"))
+			return
+		}
+
+		if password != storedPassword {
+			log.Error("Password mismatch")
+			api.RequestErrorHandler(w, errors.New("invalid password"))
+			return
+		}
+
+		log.Info("User authorized:", email)
+		next.ServeHTTP(w, r)
 	})
 }

@@ -12,6 +12,10 @@ type DatabaseInterface struct {
 	DB *sql.DB
 }
 
+func (d *DatabaseInterface) Close() {
+	panic("unimplemented")
+}
+
 var (
 	dbInstance *DatabaseInterface
 	once       sync.Once
