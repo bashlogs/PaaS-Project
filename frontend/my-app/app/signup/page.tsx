@@ -19,21 +19,27 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('https://localhost:8000/signup', {
+      const response = await fetch('http://localhost:8000/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, username, password }),
       });
 
-      if (!response.ok) throw new Error('Login failed');
-
       const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.Message || 'Login failed');
+      }
+
+      document.cookie = `authToken=${data.Token}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
       setToast({ message: 'Login Successful!', type: 'success' });
+      window.location.href = '/dashboard';
     } 
-    catch (error) {
-      setToast({ message: 'Login Failed. Please try again.', type: 'error' });
+    catch (error: any) {
+      const errorMessage = error.message || 'Signup Failed. Please try again.';
+      setToast({ message: errorMessage, type: 'error' });
     }
-    console.log('Sign-up attempt with:', { name, email, password })
+    // console.log('Sign-up attempt with:', { name, email, password })
   }
 
   return (

@@ -30,7 +30,7 @@ export default function LoginPage() {
       }
   
       document.cookie = `authToken=${data.Token}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
-      console.log('Token set:', data.Token);
+      // console.log('Token set:', data.Token);
       setToast({ message: 'Login Successful!', type: 'success' });
       window.location.href = '/dashboard';
     } catch (error: any) {
