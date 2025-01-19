@@ -10,6 +10,7 @@ func Handler(r *chi.Mux) {
 
 	r.Use(chimiddle.StripSlashes)
 
-	r.Post("/account", CreateAccount)
+	r.Post("/signup", CreateAccount)
+	r.Post("/login", Login)
 	r.With(middleware.Authorization).Get("/dashboard", Dashboard)
 }

@@ -7,29 +7,35 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CardTitle, CardDescription, CardHeader, CardContent, CardFooter, Card } from "@/components/ui/card"
 import { CloudIcon } from 'lucide-react'
-import ToastMessage from "@/components/toastMsg/ToastMessage"
+import ToastMessage from '@/components/toastMsg/ToastMessage'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
-      const response = await fetch('https://your-backend-api.com/login', {
+      const response = await fetch('http://localhost:8000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
-      if (!response.ok) throw new Error('Login failed');
-
       const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.Message || 'Login failed');
+      }
+  
+      document.cookie = `authToken=${data.Token}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
+      console.log('Token set:', data.Token);
       setToast({ message: 'Login Successful!', type: 'success' });
-    } catch (error) {
-      setToast({ message: 'Login Failed. Please try again.', type: 'error' });
+      window.location.href = '/dashboard';
+    } catch (error: any) {
+      const errorMessage = error.message || 'Login Failed. Please try again.';
+      setToast({ message: errorMessage, type: 'error' });
     }
   };
 
@@ -84,8 +90,8 @@ export default function LoginPage() {
                 id="email" 
                 required 
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="transition-all duration-300 focus:ring-2 focus:ring-primary"
               />
             </div>

@@ -11,6 +11,11 @@ type Users struct {
     Password string `json:"password"`
 }
 
+type Login_user struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type Error struct {
 	Code    int
 	Message string
@@ -18,7 +23,6 @@ type Error struct {
 
 type User_Create_Response struct {
 	Message string
-	Username string
 	Token string
 }
 
@@ -40,5 +44,8 @@ var (
 	}
 	InternalErrorHandler = func(w http.ResponseWriter) {
 		writeError(w, "An unexpected error occurred", http.StatusInternalServerError)
+	}
+	ClientErrorHandler = func(w http.ResponseWriter) {
+		writeError(w, "Invalid Request", http.StatusBadRequest)
 	}
 )

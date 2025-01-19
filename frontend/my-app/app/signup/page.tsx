@@ -7,21 +7,46 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CardTitle, CardDescription, CardHeader, CardContent, CardFooter, Card } from "@/components/ui/card"
 import { CloudIcon } from 'lucide-react'
+import ToastMessage from '@/components/toastMsg/ToastMessage'
 
 export default function SignUpPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically handle the sign-up logic
+    try {
+      const response = await fetch('https://localhost:8000/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, username, password }),
+      });
+
+      if (!response.ok) throw new Error('Login failed');
+
+      const data = await response.json();
+      setToast({ message: 'Login Successful!', type: 'success' });
+    } 
+    catch (error) {
+      setToast({ message: 'Login Failed. Please try again.', type: 'error' });
+    }
     console.log('Sign-up attempt with:', { name, email, password })
   }
 
   return (
     <>
+      {toast && (
+        <ToastMessage
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )
+      }
+
       <header className="px-4 lg:px-6 h-14 flex items-center fixed w-full bg-white/80 backdrop-blur-md z-10">
         <div className="container mx-auto max-w-7xl flex items-center justify-between">
           <Link className="flex items-center justify-center" href="/">
