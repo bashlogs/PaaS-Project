@@ -1,9 +1,7 @@
-# backend-config.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: backend-config
-  namespace: my-namespace
 data:
-  DATABASE_URL: "postgres://username:password@localhost:5432/mydb"
-  API_KEY: "your-api-key"
+  MONGO_URI: "mongodb+srv://mayur:jR3wF90oSnfZGAQt@learning.xg62wwm.mongodb.net/formDB"
+  PORT: "5000" 
