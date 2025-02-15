@@ -1,0 +1,7 @@
+namespace - done
+cpu / memory limit - done
+front-end / backend docker files - done
+setup ingress / egress
+deploy everything
+setup services
+ingress controller

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: backend-container
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb+srv://mayur:jR3wF90oSnfZGAQt@learning.xg62wwm.mongodb.net/formDB
+      - PORT=5000
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    container_name: frontend-container
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:

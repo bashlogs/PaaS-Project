@@ -1,0 +1,12 @@
+# resource-quota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: Test1-resource-quota
+  namespace: Test1
+spec:
+  hard:
+    requests.cpu: "1"         # Total CPU requested by all pods can't exceed 2 cores
+    requests.memory: "2Gi"    # Total memory requested by all pods can't exceed 2Gi
+    limits.cpu: "2"           # Total CPU limit across all pods can't exceed 4 cores
+    limits.memory: "3Gi"      # Total memory limit across all pods can't exceed 4Gi
