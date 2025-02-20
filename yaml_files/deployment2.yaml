@@ -15,7 +15,7 @@ metadata:
 data:
   config.js: |
     window._env_ = {
-      REACT_APP_BACKEND_URL: "localhost:5000"
+      REACT_APP_BACKEND_URL: "http://myapp.com/api"
     };
 
 ---
@@ -102,3 +102,26 @@ spec:
       port: 80
       targetPort: 80
   type: NodePort
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: my-middleware@kubernetescrd
+spec:
+  rules:
+  - host: myapp.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 5000
+

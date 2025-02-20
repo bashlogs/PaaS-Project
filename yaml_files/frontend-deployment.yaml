@@ -1,11 +1,42 @@
-# frontend-deployment.yaml
+# # frontend-deployment.yaml
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: frontend
+#   namespace: my-namespace
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: frontend
+#   template:
+#     metadata:
+#       labels:
+#         app: frontend
+#     spec:
+#       containers:
+#       - name: frontend
+#         image: your-frontend-image:latest
+#         ports:
+#         - containerPort: 80
+#         resources:
+#           requests:
+#             memory: "256Mi"
+#             cpu: "500m"
+#           limits:
+#             memory: "512Mi"
+#             cpu: "1"
+
+
+# # 
+
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
-  namespace: my-namespace
+  name: frontend-deployment
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: frontend
@@ -15,19 +46,13 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend
-        image: your-frontend-image:latest
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "500m"
-          limits:
-            memory: "512Mi"
-            cpu: "1"
-
-
-# 
-
-
+        - name: frontend
+          image: bashlogs/frontend:4.0  # Replace with your frontend Docker image
+          env:
+          - name: REACT_APP_BACKEND_URL
+            valueFrom:
+              configMapKeyRef:
+                name: frontend-config
+                key: REACT_APP_BACKEND_URL
+          ports:
+            - containerPort: 80
