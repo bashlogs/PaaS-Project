@@ -58,7 +58,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: bashlogs/backendapp:1.0
+          image: bashlogs/backendapp:1.1
           envFrom:
             - configMapRef:
                 name: backend-config
