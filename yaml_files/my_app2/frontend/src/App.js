@@ -13,8 +13,8 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const backendUrl = "http://localhost:5000";
-      console.log("Version: 6.0 and Backend url: ", backendUrl);
+      const backendUrl = window._env_.REACT_APP_BACKEND_URL;
+      console.log("Version: 7.0 and Backend url: ", backendUrl);
       const response = await axios.post(`${backendUrl}/submit`, form);
       setMessage(response.data.message);
     } catch (error) {

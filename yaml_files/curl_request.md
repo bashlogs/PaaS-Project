@@ -1,1 +1,0 @@
-sudo kubectl exec -it frontend-deployment-5f65f54684-zpmsr -- curl -X POST backend-service:5000/submit   -H "Content-Type: application/json"   -d '{"name": "Mayur Satish Khadde", "email": "mayur.khadde22@vit.edu", "feedback": "123"}'   

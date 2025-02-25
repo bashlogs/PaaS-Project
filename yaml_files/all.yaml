@@ -1,0 +1,102 @@
+--- 
+# namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test1
+
+
+---
+# resource-quota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: test1-resource-quota
+  namespace: test1
+spec:
+  hard:
+    requests.cpu: "1"         # Total CPU requested by all pods can't exceed 2 cores
+    requests.memory: "2Gi"    # Total memory requested by all pods can't exceed 2Gi
+    limits.cpu: "2"           # Total CPU limit across all pods can't exceed 4 cores
+    limits.memory: "3Gi"      # Total memory limit across all pods can't exceed 4Gi
+
+---
+# Config Map for backend
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: test1
+data:
+  MONGO_URI: ""
+  PORT: "5000" 
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: test1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: bashlogs/backendapp:1.1
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: test1
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  namespace: test1
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - host: backend.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 5000
