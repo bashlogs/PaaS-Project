@@ -5,11 +5,13 @@ import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DockerDeploy } from "@/components/workspace/docker-deploy"
 import { DeploymentInfo } from "@/components/workspace/deployment-info"
+import { InfoSteps } from "@/components/workspace/info-steps"
 import { getUserWorkspaces, type Workspace } from "@/lib/api/workspaces"
 
 export default function WorkspacePage() {
   const { id } = useParams()
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
+  const [step, setStep] = useState<"info" | "deploy">("info")
   const [deploymentFlow, setDeploymentFlow] = useState<string[]>([])
   const [logs, setLogs] = useState<string[]>([])
 
@@ -21,6 +23,10 @@ export default function WorkspacePage() {
       }
     })
   }, [id])
+
+  const handleNext = () => {
+    setStep("deploy")
+  }
 
   const handleDeploy = (frontendUrl: string, backendUrl: string) => {
     // Simulated deployment process
@@ -58,18 +64,26 @@ export default function WorkspacePage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{workspace.name}</CardTitle>
-        <CardDescription>Deploy your application using Docker</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <DockerDeploy onDeploy={handleDeploy} />
-        {(deploymentFlow.length > 0 || logs.length > 0) && (
-          <DeploymentInfo deploymentFlow={deploymentFlow} logs={logs} />
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <h2 className="text-3xl font-bold tracking-tight">{workspace.name}</h2>
+
+      {step === "info" ? (
+        <InfoSteps onNext={handleNext} />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Deploy Your Application</CardTitle>
+            <CardDescription>Provide your Docker image URLs to start the deployment</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <DockerDeploy onDeploy={handleDeploy} />
+            {(deploymentFlow.length > 0 || logs.length > 0) && (
+              <DeploymentInfo deploymentFlow={deploymentFlow} logs={logs} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
 

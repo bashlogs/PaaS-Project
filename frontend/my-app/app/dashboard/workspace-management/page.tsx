@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import {
   getUserWorkspaces,
   createWorkspace,
-  renameWorkspace,
+  updateWorkspaceStatus,
+  updateWorkspaceEndpoint,
   deleteWorkspace,
   type Workspace,
 } from "@/lib/api/workspaces"
@@ -17,7 +19,7 @@ import {
 export default function WorkspaceManagementPage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [newWorkspaceName, setNewWorkspaceName] = useState("")
-  const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null)
+  const [newWorkspaceEndpoint, setNewWorkspaceEndpoint] = useState("")
 
   useEffect(() => {
     loadWorkspaces()
@@ -29,16 +31,21 @@ export default function WorkspaceManagementPage() {
   }
 
   const handleCreateWorkspace = async () => {
-    if (newWorkspaceName.trim()) {
-      await createWorkspace(newWorkspaceName.trim())
+    if (newWorkspaceName.trim() && newWorkspaceEndpoint.trim()) {
+      await createWorkspace(newWorkspaceName.trim(), newWorkspaceEndpoint.trim())
       setNewWorkspaceName("")
+      setNewWorkspaceEndpoint("")
       loadWorkspaces()
     }
   }
 
-  const handleRenameWorkspace = async (id: string, newName: string) => {
-    await renameWorkspace(id, newName)
-    setEditingWorkspace(null)
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    await updateWorkspaceStatus(id, !currentStatus)
+    loadWorkspaces()
+  }
+
+  const handleUpdateEndpoint = async (id: string, newEndpoint: string) => {
+    await updateWorkspaceEndpoint(id, newEndpoint)
     loadWorkspaces()
   }
 
@@ -53,66 +60,78 @@ export default function WorkspaceManagementPage() {
     <Card>
       <CardHeader>
         <CardTitle>Workspace Management</CardTitle>
-        <CardDescription>Create, rename, and delete your workspaces</CardDescription>
+        <CardDescription>Create and manage your workspaces</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="new-workspace">Create New Workspace</Label>
-            <div className="flex space-x-2">
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <h3 className="text-lg font-medium">Create New Workspace</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-workspace-name">Workspace Name</Label>
               <Input
-                id="new-workspace"
+                id="new-workspace-name"
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
                 placeholder="Enter workspace name"
               />
-              <Button onClick={handleCreateWorkspace}>Create</Button>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-workspace-endpoint">Endpoint URL</Label>
+              <Input
+                id="new-workspace-endpoint"
+                value={newWorkspaceEndpoint}
+                onChange={(e) => setNewWorkspaceEndpoint(e.target.value)}
+                placeholder="https://example.com"
+              />
             </div>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Workspace Name</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {workspaces.map((workspace) => (
-                <TableRow key={workspace.id}>
-                  <TableCell>
-                    {editingWorkspace?.id === workspace.id ? (
-                      <Input
-                        value={editingWorkspace.name}
-                        onChange={(e) => setEditingWorkspace({ ...editingWorkspace, name: e.target.value })}
-                      />
-                    ) : (
-                      workspace.name
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingWorkspace?.id === workspace.id ? (
-                      <div className="space-x-2">
-                        <Button onClick={() => handleRenameWorkspace(workspace.id, editingWorkspace.name)}>Save</Button>
-                        <Button variant="outline" onClick={() => setEditingWorkspace(null)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-x-2">
-                        <Button variant="outline" onClick={() => setEditingWorkspace(workspace)}>
-                          Rename
-                        </Button>
-                        <Button variant="destructive" onClick={() => handleDeleteWorkspace(workspace.id)}>
-                          Delete
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Button onClick={handleCreateWorkspace} className="mt-2">
+            Create Workspace
+          </Button>
         </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Workspace Name</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Endpoint</TableHead>
+              <TableHead>Actions</TableHead>
+              <TableHead>Delete</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {workspaces.map((workspace) => (
+              <TableRow key={workspace.id}>
+                <TableCell>{workspace.name}</TableCell>
+                <TableCell>
+                  <Badge variant={workspace.isActive ? "success" : "destructive"}>
+                    {workspace.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={workspace.endpoint}
+                    onChange={(e) => handleUpdateEndpoint(workspace.id, e.target.value)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant={workspace.isActive ? "destructive" : "default"}
+                    onClick={() => handleToggleStatus(workspace.id, workspace.isActive)}
+                    className="w-full"
+                  >
+                    {workspace.isActive ? "Deactivate" : "Activate"}
+                  </Button>
+                </TableCell>
+                <TableCell>
+                  <Button variant="destructive" onClick={() => handleDeleteWorkspace(workspace.id)} className="w-full">
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )

@@ -40,14 +40,21 @@ export function DashboardNav({ className }: DashboardNavProps) {
                 Dashboard
               </Button>
             </Link>
+            <Link href="/dashboard/workspace-management" className="mb-1">
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start",
+                  pathname === "/dashboard/workspace-management" && "bg-gray-200 dark:bg-gray-700",
+                )}
+              >
+                <FolderCog className="mr-2 h-4 w-4" />
+                Manage Workspaces
+              </Button>
+            </Link>
             <div className="space-y-1">
-              <div className="flex items-center justify-between px-4 py-2">
+              <div className="px-4 py-2">
                 <h2 className="text-lg font-semibold">Workspaces</h2>
-                <Link href="/dashboard/workspace-management">
-                  <Button variant="ghost" size="icon" title="Manage Workspaces">
-                    <FolderCog className="h-5 w-5" />
-                  </Button>
-                </Link>
               </div>
               {workspaces.map((workspace) => (
                 <Link key={workspace.id} href={`/dashboard/workspace/${workspace.id}`} className="block">
@@ -64,18 +71,6 @@ export function DashboardNav({ className }: DashboardNavProps) {
                 </Link>
               ))}
             </div>
-            <Link href="/dashboard/workspace-management" className="mt-1">
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start",
-                  pathname === "/dashboard/workspace-management" && "bg-gray-200 dark:bg-gray-700",
-                )}
-              >
-                <FolderCog className="mr-2 h-4 w-4" />
-                Manage Workspaces
-              </Button>
-            </Link>
             <Link href="/dashboard/settings" className="mt-1">
               <Button
                 variant="ghost"
