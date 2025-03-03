@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from "recharts"
 import { ArrowUpRight, Users, Server, Activity } from "lucide-react"
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/store/store";
+import { fetchUserData } from "@/store/userSlice";
 
 // Sample data for charts
 const deploymentData = [
@@ -25,47 +28,40 @@ const resourceUsageData = [
   { name: "Sun", cpu: 45, memory: 30 },
 ]
 
-interface UserData {
-  message: string;
-  name: string;
-  username: string;
-  email: string;
-}
-
 export default function DashboardPage() {
-  const [userData, setUserData] = useState<UserData | null>(null); // State to store user data
-  const [isLoading, setIsLoading] = useState(true); // State to handle loading state
+  const dispatch = useDispatch<AppDispatch>();
+  const { userData } = useSelector((state: RootState) => state.user);
   const [error, setError] = useState<string | null>(null); // State to handle errors
 
-  useEffect(() => {
-      // Fetch user data after token validation
-      fetch("http://localhost:8000/dashboard", {
-          method: "GET",
-          credentials: "include", // Ensures cookies are sent
-      })
-          .then((response) => {
-              if (!response.ok) {
-                  throw new Error("Unauthorized");
-              }
-              return response.json(); // Parse the JSON data
-          })
-          .then((data) => {
-              setUserData(data); // Update state with user data
-              setIsLoading(false); // Mark loading as complete
-          })
-          .catch((error) => {
-              console.error("Error:", error.message);
-              setError("You are not authorized to access this page.");
-              setIsLoading(false);
-              setTimeout(() => {
-                  window.location.href = "/login"; // Redirect after a delay
-              }, 2000);
-          });
-  }, []);
+  // useEffect(() => {
+  //     // Fetch user data after token validation
+  //     fetch("http://localhost:8000/dashboard", {
+  //         method: "GET",
+  //         credentials: "include", // Ensures cookies are sent
+  //     })
+  //         .then((response) => {
+  //             if (!response.ok) {
+  //                 throw new Error("Unauthorized");
+  //             }
+  //             return response.json(); // Parse the JSON data
+  //         })
+  //         .then((data) => {
+  //             setUserData(data); // Update state with user data
+  //             setIsLoading(false); // Mark loading as complete
+  //         })
+  //         .catch((error) => {
+  //             console.error("Error:", error.message);
+  //             setError("You are not authorized to access this page.");
+  //             setIsLoading(false);
+  //             setTimeout(() => {
+  //                 window.location.href = "/login"; // Redirect after a delay
+  //             }, 2000);
+  //         });
+  // }, []);
 
-  if (isLoading) {
-      return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    dispatch(fetchUserData()).catch((error) => console.error("Failed to fetch user data:", error));
+  }, [dispatch]);
 
   if (error) {
       return <div>{error}</div>; // Display error message

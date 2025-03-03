@@ -1,12 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/store/store";
+import { fetchUserData } from "@/store/userSlice";
 import {
   getUserWorkspaces,
   createWorkspace,
@@ -17,27 +21,61 @@ import {
 } from "@/lib/api/workspaces"
 
 export default function WorkspaceManagementPage() {
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const { userData, isLoading } = useSelector((state: RootState) => state.user);
+
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [newWorkspaceName, setNewWorkspaceName] = useState("")
   const [newWorkspaceEndpoint, setNewWorkspaceEndpoint] = useState("")
-
-  useEffect(() => {
-    loadWorkspaces()
-  }, [])
-
+  
   const loadWorkspaces = async () => {
-    const loadedWorkspaces = await getUserWorkspaces()
-    setWorkspaces(loadedWorkspaces)
-  }
-
-  const handleCreateWorkspace = async () => {
-    if (newWorkspaceName.trim() && newWorkspaceEndpoint.trim()) {
-      await createWorkspace(newWorkspaceName.trim(), newWorkspaceEndpoint.trim())
-      setNewWorkspaceName("")
-      setNewWorkspaceEndpoint("")
-      loadWorkspaces()
+    try {
+      const workspaces = await getUserWorkspaces();
+      setWorkspaces(workspaces);
+    } catch (error) {
+      console.error("Failed to fetch workspaces:", error);
     }
   }
+
+  useEffect(() => {
+    dispatch(fetchUserData())
+      .unwrap()
+      .then((userData) => {
+        console.log("User data fetched successfully:", userData);
+      })
+      .catch((error) => {
+        console.log("Error caught in component:", error);
+        if (error === 'Unauthorized') {
+          router.push("/login");
+        } else {
+          console.error("Failed to fetch user data:", error);
+        }
+      });
+  }, [dispatch, router]);
+
+  useEffect(() => {
+    if (!isLoading && userData) {
+      loadWorkspaces();
+    }
+  }, [isLoading, userData]);
+
+  useEffect(() => {
+    if (userData) {
+      const username = userData.username;
+      setNewWorkspaceEndpoint(`http://localhost:8000/${username}/${newWorkspaceName}`);
+    }
+  }, [newWorkspaceName, userData]);
+  
+
+  const handleCreateWorkspace = async () => {
+    if (userData && newWorkspaceName.trim() && newWorkspaceEndpoint.trim()) {
+      await createWorkspace(newWorkspaceName.trim(), newWorkspaceEndpoint.trim(), userData.username);
+      setNewWorkspaceName("");
+      setNewWorkspaceEndpoint("");
+      loadWorkspaces();
+    }
+  };
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     await updateWorkspaceStatus(id, !currentStatus)
@@ -54,6 +92,10 @@ export default function WorkspaceManagementPage() {
       await deleteWorkspace(id)
       loadWorkspaces()
     }
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -100,40 +142,45 @@ export default function WorkspaceManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {workspaces.map((workspace) => (
-              <TableRow key={workspace.id}>
-                <TableCell>{workspace.name}</TableCell>
-                <TableCell>
-                  <Badge variant={workspace.isActive ? "success" : "destructive"}>
-                    {workspace.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={workspace.endpoint}
-                    onChange={(e) => handleUpdateEndpoint(workspace.id, e.target.value)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant={workspace.isActive ? "destructive" : "default"}
-                    onClick={() => handleToggleStatus(workspace.id, workspace.isActive)}
-                    className="w-full"
-                  >
-                    {workspace.isActive ? "Deactivate" : "Activate"}
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <Button variant="destructive" onClick={() => handleDeleteWorkspace(workspace.id)} className="w-full">
-                    Delete
-                  </Button>
-                </TableCell>
+            {workspaces && workspaces.length > 0 ? (
+              workspaces.map((workspace) => (
+                <TableRow key={workspace.id}>
+                  <TableCell>{workspace.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={workspace.isActive ? "success" : "destructive"}>
+                      {workspace.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={workspace.endpoint}
+                      onChange={(e) => handleUpdateEndpoint(workspace.id, e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant={workspace.isActive ? "destructive" : "default"}
+                      onClick={() => handleToggleStatus(workspace.id, workspace.isActive)}
+                      className="w-full"
+                    >
+                      {workspace.isActive ? "Deactivate" : "Activate"}
+                    </Button>
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="destructive" onClick={() => handleDeleteWorkspace(workspace.id)} className="w-full">
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5}>No workspaces available</TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </CardContent>
     </Card>
   )
 }
-
