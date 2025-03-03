@@ -31,6 +31,26 @@ type User_Create_Response struct {
 	Token string
 }
 
+type CreateWorkspace struct {
+	Name string `json:"name"`
+	Endpoint string `json:"endpoint"`
+	Username string `json:"username"`
+}
+
+// export interface Workspace {
+// 	id: string
+// 	name: string
+// 	isActive: boolean
+// 	endpoint: string
+//   }
+
+type Workspace struct {
+	Id int `json:"namespace_id"`
+	Name string `json:"namespace"`
+	IsActive bool `json:"active"`
+	Endpoint string `json:"endpoint"`
+}
+
 func writeError(w http.ResponseWriter, message string, code int) {
     resp := Error{
 		Code: code,
@@ -52,5 +72,8 @@ var (
 	}
 	ClientErrorHandler = func(w http.ResponseWriter) {
 		writeError(w, "Invalid Request", http.StatusBadRequest)
+	}
+	KubernetesErrorHandler = func(w http.ResponseWriter) {
+		writeError(w, "Kubernetes Error", http.StatusInternalServerError)
 	}
 )

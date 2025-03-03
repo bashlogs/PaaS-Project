@@ -4,7 +4,6 @@ CREATE TABLE "users"(
     "email" VARCHAR(255) NOT NULL UNIQUE,
     "username" VARCHAR(255) NOT NULL UNIQUE, -- Ensure username is unique
     "password" VARCHAR(255) NOT NULL,
-    "sub_id" BIGINT NOT NULL,
     PRIMARY KEY("user_id")
 );
 
@@ -29,7 +28,7 @@ CREATE TABLE "subscription_types"(
     PRIMARY KEY("type_id")
 );
 
-CREATE TABLE "Transactions"(
+CREATE TABLE "transactions"(
     "transaction_id" BIGINT NOT NULL,
     "transaction_no" BIGINT NOT NULL UNIQUE,
     "transaction_date" DATE NOT NULL,

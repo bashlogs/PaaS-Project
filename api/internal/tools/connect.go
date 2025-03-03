@@ -2,9 +2,13 @@ package tools
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 	"sync"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // PostgreSQL driver
+	_ "github.com/jackc/pgx/v5" // PostgreSQL driver
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -30,10 +34,23 @@ func ConnectToDatabase() (*DatabaseInterface, error) {
 		// 	os.Getenv("DB_PASSWORD"),
 		// 	os.Getenv("DB_NAME"),
 		// )
+		
+		err := godotenv.Load(".env")
+        if err != nil {
+            log.Errorf("Error loading .env file: %v", err)
+            return
+        }
 
-		dataSourceName := "user=postgres password=khadde dbname=test sslmode=disable"
+		// dataSourceName := "user=postgres password=khadde dbname=test sslmode=disable"
+		dataSourceName := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
+            os.Getenv("DB_USER"),
+            os.Getenv("DB_PASSWORD"),
+            os.Getenv("DB_HOST"),
+            os.Getenv("DB_PORT"),
+            os.Getenv("DB_NAME"),
+        )
 
-		db, dbErr := sql.Open("pgx", dataSourceName)
+		db, dbErr := sql.Open("postgres", dataSourceName)
 		if dbErr != nil {
 			err = dbErr
 			log.Errorf("Failed to open database: %v", err)
