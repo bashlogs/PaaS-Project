@@ -7,10 +7,10 @@ export interface Workspace {
 
 let cachedWorkspaces: Workspace[] | null = null;
 
-async function fetchWorkspaces(forceRefresh: boolean = false): Promise<Workspace[]> {
-  if (!forceRefresh && cachedWorkspaces !== null) {
+async function fetchWorkspaces(forceRefresh: boolean): Promise<Workspace[]> {
+  if (!forceRefresh && cachedWorkspaces) {
     console.log("Returning cached workspaces:", cachedWorkspaces);
-    return cachedWorkspaces; // Return cached data if available and no refresh is required
+    return cachedWorkspaces;
   }
 
   try {
@@ -22,21 +22,14 @@ async function fetchWorkspaces(forceRefresh: boolean = false): Promise<Workspace
     });
 
     if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch {
-        errorData = { message: "Unknown error" };
-      }
+      const errorData = await response.json();
       console.error("API Error:", response.status, response.statusText, errorData);
       throw new Error(`Error ${response.status}: ${errorData?.message || "Failed to fetch workspaces"}`);
     }
 
     const data = await response.json();
-
-    // Transform the API response to match the Workspace interface
     cachedWorkspaces = data.map((item: any) => ({
-      id: String(item.namespace_id),
+      id: item.namespace_id,
       name: item.namespace,
       isActive: item.active,
       endpoint: item.endpoint,
@@ -51,7 +44,7 @@ async function fetchWorkspaces(forceRefresh: boolean = false): Promise<Workspace
 }
 
 export async function getUserWorkspaces(forceRefresh: boolean = false): Promise<Workspace[]> {
-  return fetchWorkspaces(forceRefresh);
+  return await fetchWorkspaces(forceRefresh);
 }
 
 // Function to invalidate the cache when changes are made
@@ -61,7 +54,7 @@ function invalidateWorkspaceCache() {
 
 // Modify these functions to invalidate cache when updating or deleting a workspace
 export async function createWorkspace(name: string, endpoint: string, username: string): Promise<Workspace> {
-  const response = await fetch("http://127.0.0.1:8000/api/workspaces", {
+  const response = await fetch("http://localhost:8000/api/workspaces", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -72,9 +65,16 @@ export async function createWorkspace(name: string, endpoint: string, username: 
     throw new Error("Failed to create workspace");
   }
 
-  const newWorkspace: Workspace = await response.json();
-  invalidateWorkspaceCache(); // Invalidate cache after creation
-  return newWorkspace;
+  const newWorkspace = await response.json();
+  fetchWorkspaces(true); 
+  const workspaceInfo: Workspace = {
+    id: newWorkspace.namespace_id,
+    name: newWorkspace.namespace,
+    isActive: newWorkspace.active,
+    endpoint: newWorkspace.endpoint,
+  };
+
+  return workspaceInfo; 
 }
 
 export async function updateWorkspaceStatus(id: string, isActive: boolean): Promise<Workspace> {
@@ -106,20 +106,22 @@ export async function updateWorkspaceEndpoint(id: string, endpoint: string): Pro
     throw new Error("Failed to update workspace endpoint");
   }
 
-  const updatedWorkspace: Workspace = await response.json();
+  const updatedWorkspace = await response.json();
   invalidateWorkspaceCache(); // Invalidate cache after update
   return updatedWorkspace;
 }
 
 export async function deleteWorkspace(id: string): Promise<void> {
-  const response = await fetch(`http://localhost:8000/api/workspaces/${id}`, {
+  const response = await fetch(`http://localhost:8000/api/workspaces?id=${id}`, {
     method: "DELETE",
-    credentials: "include",
+    credentials: "include", 
   });
 
   if (!response.ok) {
     throw new Error("Failed to delete workspace");
   }
-
-  invalidateWorkspaceCache(); // Invalidate cache after deletion
+  const output = fetchWorkspaces(true); 
+  console.log(output);
+  const deleteworkspace = await response.json();
+  return deleteworkspace
 }

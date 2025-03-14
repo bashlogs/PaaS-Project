@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 type Users struct {
@@ -35,6 +36,16 @@ type CreateWorkspace struct {
 	Name string `json:"name"`
 	Endpoint string `json:"endpoint"`
 	Username string `json:"username"`
+}
+
+type Namespace_info struct {
+    TypeName        string
+    CPULimit        int
+    MemoryLimit     int
+    NamespaceLimit  int
+    NamespaceCount  int
+    TransactionDate *time.Time // Use pointer to handle NULL values
+    Validity        *time.Time // Use pointer to handle NULL values
 }
 
 // export interface Workspace {

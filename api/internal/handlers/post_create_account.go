@@ -10,7 +10,6 @@ import (
 	"github.com/bashlogs/PaaS_Project/api/api"
 	"github.com/bashlogs/PaaS_Project/api/internal/middleware"
 	"github.com/bashlogs/PaaS_Project/api/internal/tools"
-	"github.com/golang-jwt/jwt"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -55,7 +54,7 @@ func CreateAccount(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	token, err := middleware.JWT_Token(param.Email, param.Password)
+	token, err := middleware.JWT_Token(param.Email)
 	if err != nil {
 		log.Error("Failed to generate token: ", err)
 		api.InternalErrorHandler(w)
@@ -118,7 +117,7 @@ func Login(w http.ResponseWriter, r *http.Request){
 	}
 
 	if password == param.Password {
-		token, err := middleware.JWT_Token(param.Username, param.Password)
+		token, err := middleware.JWT_Token(param.Username)
 		if err != nil {
 			log.Error("Failed to generate token: ", err)
 			api.InternalErrorHandler(w)
@@ -152,54 +151,94 @@ type DashboardResponse struct {
 
 var SecretKey = []byte("khadde")
 
+// func Dashboard(w http.ResponseWriter, r *http.Request) {
+// 	// Retrieve the auth token from the cookie
+// 	cookie, err := r.Cookie("authToken")
+// 	if err != nil {
+// 		log.Error("Cookie error:", err)
+// 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	tokenString := cookie.Value
+// 	if tokenString == "" {
+// 		log.Error("Authorization token missing")
+// 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	// Parse and validate the JWT token
+// 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+// 		// Ensure the signing method is HMAC
+// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+// 			return nil, errors.New("unexpected signing method")
+// 		}
+// 		return SecretKey, nil // Replace secretKey with your actual secret
+// 	})
+
+// 	if err != nil || !token.Valid {
+// 		log.Error("Invalid token:", err)
+// 		http.Error(w, "Invalid token", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	// Extract claims
+// 	claims, ok := token.Claims.(jwt.MapClaims)
+// 	if !ok {
+// 		log.Error("Failed to parse token claims")
+// 		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	// Extract email from token
+// 	email, ok := claims["email"].(string)
+// 	if !ok {
+// 		log.Error("Invalid email in token")
+// 		http.Error(w, "Invalid token: missing email", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	fmt.Println("Email:", email)
+// 	// Connect to the database
+// 	database, err := tools.ConnectToDatabase()
+// 	if err != nil {
+// 		log.Error("Database connection error:", err)
+// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	var username, name string
+// 	err = database.DB.QueryRow("SELECT username, name FROM users WHERE email=$1", email).Scan(&username, &name)
+// 	if err != nil {
+// 		log.Error("Error retrieving user details:", err)
+// 		http.Error(w, "User not found", http.StatusNotFound)
+// 		return
+// 	}
+
+// 	// Prepare the response
+// 	response := DashboardResponse{
+// 		Message: "Access granted to the dashboard",
+// 		Email:    email,
+// 		Username: username,
+// 		Name:     name,
+// 	}
+
+// 	w.Header().Set("Content-Type", "application/json")
+// 	err = json.NewEncoder(w).Encode(response)
+// 	if err != nil {
+// 		log.Error("Error encoding dashboard response:", err)
+// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+// 	}
+// }
+
+
 func Dashboard(w http.ResponseWriter, r *http.Request) {
-	// Retrieve the auth token from the cookie
-	cookie, err := r.Cookie("authToken")
-	if err != nil {
-		log.Error("Cookie error:", err)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	email, ok := r.Context().Value("email").(string)
+	if !ok || email == "" {
+		http.Error(w, "Failed to retrieve user information", http.StatusUnauthorized)
 		return
 	}
 
-	tokenString := cookie.Value
-	if tokenString == "" {
-		log.Error("Authorization token missing")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	// Parse and validate the JWT token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Ensure the signing method is HMAC
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
-		return SecretKey, nil // Replace secretKey with your actual secret
-	})
-
-	if err != nil || !token.Valid {
-		log.Error("Invalid token:", err)
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
-
-	// Extract claims
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		log.Error("Failed to parse token claims")
-		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
-		return
-	}
-
-	// Extract email from token
-	email, ok := claims["email"].(string)
-	if !ok {
-		log.Error("Invalid email in token")
-		http.Error(w, "Invalid token: missing email", http.StatusUnauthorized)
-		return
-	}
-
-	// Connect to the database
 	database, err := tools.ConnectToDatabase()
 	if err != nil {
 		log.Error("Database connection error:", err)
@@ -207,15 +246,14 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var username, name string
+	var username, name string 
 	err = database.DB.QueryRow("SELECT username, name FROM users WHERE email=$1", email).Scan(&username, &name)
 	if err != nil {
-		log.Error("Error retrieving user details:", err)
+		log.Error("Error retrieving user data:", err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	// Prepare the response
 	response := DashboardResponse{
 		Message: "Access granted to the dashboard",
 		Email:    email,
@@ -229,4 +267,5 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		log.Error("Error encoding dashboard response:", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
+	// fmt.Fprintf(w, "Welcome %s! Your data: %v", email, userData)
 }

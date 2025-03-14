@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/store";
 import { fetchUserData } from "@/store/userSlice";
-
+import { useRouter } from "next/navigation"
 // Sample data for charts
 const deploymentData = [
   { name: "Jan", deployments: 4 },
@@ -30,8 +30,8 @@ const resourceUsageData = [
 
 export default function DashboardPage() {
   const dispatch = useDispatch<AppDispatch>();
-  const { userData } = useSelector((state: RootState) => state.user);
-  const [error, setError] = useState<string | null>(null); // State to handle errors
+  const { userData, isLoading, error } = useSelector((state: RootState) => state.user);
+  const router = useRouter();
 
   // useEffect(() => {
   //     // Fetch user data after token validation
@@ -60,12 +60,26 @@ export default function DashboardPage() {
   // }, []);
 
   useEffect(() => {
-    dispatch(fetchUserData()).catch((error) => console.error("Failed to fetch user data:", error));
+    console.log("Dispatching fetchUserData...");
+    dispatch(fetchUserData())
+      .unwrap()
+      .then(userData => {
+        console.log("User data fetched successfully:", userData);
+      })
+      .catch(error => {
+        console.error("Failed to fetch user data:", error);
+        // Error is already handled in the secondary useEffect for redirection
+      });
   }, [dispatch]);
 
-  if (error) {
-      return <div>{error}</div>; // Display error message
-  }
+  useEffect(() => {
+    if (error === "Unauthorized") {
+      console.log("Unauthorized error detected, redirecting to login...");
+      router.push("/login");
+    }
+  }, [error, router]);
+
+  if (isLoading) return <p>Loading...</p>;
   
   return (
     <div className="space-y-6">

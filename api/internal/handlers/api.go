@@ -27,6 +27,7 @@ func Handler(r *chi.Mux) {
     r.Route("/api", func(router chi.Router){
         router.Use(middleware.Authorization)
         router.Get("/workspaces", GetWorkspaces)
-        // router.Post("/workspaces", CreateWorkspace)
+        router.Post("/workspaces", CreateWorkspace)
+        router.Delete("/workspaces", DeleteWorkspace)
     })
 }

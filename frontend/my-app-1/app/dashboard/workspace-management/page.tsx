@@ -1,70 +1,50 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store/store";
+import { fetchUserData } from "@/store/userSlice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from "@/store/store";
-import { fetchUserData } from "@/store/userSlice";
-import {
-  getUserWorkspaces,
-  createWorkspace,
-  updateWorkspaceStatus,
-  updateWorkspaceEndpoint,
-  deleteWorkspace,
-  type Workspace,
-} from "@/lib/api/workspaces"
+import { useWorkspace } from "@/components/contexts/WorkspaceContext";
 
-export default function WorkspaceManagementPage() {
-  const dispatch = useDispatch<AppDispatch>();
-  const { userData, isLoading, error } = useSelector((state: RootState) => state.user);
+const WorkspaceManagement = () => {
   const router = useRouter();
-
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const dispatch = useDispatch<AppDispatch>();
+  const { userData, isLoading } = useSelector((state: RootState) => state.user);
+  
+  const { 
+    workspaces, 
+    fetchWorkspaces, 
+    createNewWorkspace, 
+    toggleWorkspaceStatus, 
+    updateEndpoint, 
+    removeWorkspace 
+  } = useWorkspace();
+  
   const [newWorkspaceName, setNewWorkspaceName] = useState("")
   const [newWorkspaceEndpoint, setNewWorkspaceEndpoint] = useState("")
-    
-  useEffect(() => {
-    console.log("Dispatching fetchUserData...");
-    dispatch(fetchUserData()).catch((error) => console.error("Failed to fetch user data:", error));
-  }, [dispatch]);
-
-  const loadWorkspaces = async () => {
-    try {
-      const workspaces = await getUserWorkspaces(true);
-      setWorkspaces(workspaces);
-    } catch (error) {
-      console.error("Failed to fetch workspaces:", error);
-    }
-  }
-  
-  useEffect(() => {
-    loadWorkspaces();
-  }, []);
 
   useEffect(() => {
-    if (error === "Unauthorized") {
-      console.log("Unauthorized error detected, clearing auth state...");
-      
-      document.cookie.split(";").forEach(cookie => {
-        const [name] = cookie.split("=");
-        document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-      });
-      
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('authToken');
-      }
-  
-      setTimeout(() => {
+    dispatch(fetchUserData())
+      .unwrap()
+      .then(userData => {
+        console.log("User data fetched successfully for workspace management:", userData);
+      })
+      .catch(error => {
+        console.error("Failed to fetch user data:", error);
         router.push("/login");
-      }, 100);
-    }
-  }, [error, router]);
+      });
+  }, [dispatch, router]);
+  
+  useEffect(() => {
+    fetchWorkspaces();
+  }, [fetchWorkspaces]);
 
   useEffect(() => {
     if (userData) {
@@ -72,12 +52,15 @@ export default function WorkspaceManagementPage() {
       setNewWorkspaceEndpoint(`http://localhost:8000/${username}/${newWorkspaceName}`);
     }
   }, [newWorkspaceName, userData]);
-  
+
   const handleCreateWorkspace = async () => {
     if (userData && newWorkspaceName.trim() && newWorkspaceEndpoint.trim()) {
       try {
-        const newWorkspace = await createWorkspace(newWorkspaceName.trim(), newWorkspaceEndpoint.trim(), userData.username);
-        await loadWorkspaces();
+        await createNewWorkspace(
+          newWorkspaceName.trim(), 
+          newWorkspaceEndpoint.trim(), 
+          userData.username
+        );
         setNewWorkspaceName("");
         setNewWorkspaceEndpoint("");
       } catch (error) {
@@ -87,32 +70,25 @@ export default function WorkspaceManagementPage() {
   };
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-    await updateWorkspaceStatus(id, !currentStatus)
-    loadWorkspaces()
+    await toggleWorkspaceStatus(id, currentStatus);
   }
 
   const handleUpdateEndpoint = async (id: string, newEndpoint: string) => {
-    await updateWorkspaceEndpoint(id, newEndpoint)
-    loadWorkspaces()
+    await updateEndpoint(id, newEndpoint);
   }
 
   const handleDeleteWorkspace = async (id: string) => {
-    if (confirm(`Are you sure you want to delete this ${id} workspace?`)) {
+    if (confirm(`Are you sure you want to delete this workspace?`)) {
       try {
-        await deleteWorkspace(id);
-        await loadWorkspaces();
-        // Update the state by filtering out the deleted workspace
-        // setWorkspaces(prevWorkspaces => prevWorkspaces.filter(workspace => workspace.id !== id));
+        await removeWorkspace(id);
       } catch (error) {
         console.error("Failed to delete workspace:", error);
       }
     }
   };
+
+  if (isLoading) return <p>Loading...</p>;
   
-
-  // if (isLoading) return <div>Loading...</div>;
-  // if (error === "Unauthorized") return <p>Error: {error}</p>;
-
   return (
     <Card>
       <CardHeader>
@@ -197,5 +173,7 @@ export default function WorkspaceManagementPage() {
         </Table>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
+
+export default WorkspaceManagement;

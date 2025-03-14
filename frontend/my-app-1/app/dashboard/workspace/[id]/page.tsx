@@ -15,32 +15,32 @@ export default function WorkspacePage() {
   const [deploymentFlow, setDeploymentFlow] = useState<string[]>([])
   const [logs, setLogs] = useState<string[]>([])
 
-  useEffect(() => {
-    if (!id) return;
+  // useEffect(() => {
+  //   if (!id) return;
   
-    const controller = new AbortController();
+  //   const controller = new AbortController();
   
-    getUserWorkspaces()
-      .then((workspaces) => {
-        if (!workspaces || !Array.isArray(workspaces)) {
-          console.error("Invalid workspace response:", workspaces);
-          return;
-        }
-        const currentWorkspace = workspaces.find((w) => w.id === id);
-        if (currentWorkspace) {
-          setWorkspace(currentWorkspace);
-        } else {
-          console.error("Workspace not found for ID:", id);
-        }
-      })
-      .catch((error) => {
-        if (error.name !== "AbortError") {
-          console.error("Error fetching workspaces:", error);
-        }
-      });
+  //   getUserWorkspaces()
+  //     .then((workspaces) => {
+  //       if (!workspaces || !Array.isArray(workspaces)) {
+  //         console.error("Invalid workspace response:", workspaces);
+  //         return;
+  //       }
+  //       const currentWorkspace = workspaces.find((w) => w.id === id);
+  //       if (currentWorkspace) {
+  //         setWorkspace(currentWorkspace);
+  //       } else {
+  //         console.error("Workspace not found for ID:", id);
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       if (error.name !== "AbortError") {
+  //         console.error("Error fetching workspaces:", error);
+  //       }
+  //     });
   
-    return () => controller.abort();
-  }, [id]);
+  //   return () => controller.abort();
+  // }, [id]);
   
 
   const handleNext = () => {
@@ -78,13 +78,13 @@ export default function WorkspacePage() {
     ])
   }
 
-  if (!workspace) {
-    return <div>Loading...</div>
-  }
+  // if (!workspace) {
+  //   return <div>Loading...</div>
+  // }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold tracking-tight">{workspace.name}</h2>
+      <h2 className="text-3xl font-bold tracking-tight">{123}</h2>
 
       {step === "info" ? (
         <InfoSteps onNext={handleNext} />

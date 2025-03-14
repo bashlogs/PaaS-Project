@@ -15,20 +15,33 @@ export function DashboardNav({ className }: { className?: string }) {
   useEffect(() => {
     const fetchWorkspaces = async () => {
       try {
-        const data = await getUserWorkspaces();
-        if (Array.isArray(data)) {
-          setWorkspaces(data);
-        } else {
-          setWorkspaces([]);
-        }
+        const data = await getUserWorkspaces(true); // Force refresh from API
+        setWorkspaces(data);
       } catch (error) {
         console.error("Error fetching workspaces:", error);
-        setWorkspaces([]);
       }
     };
-
+  
     fetchWorkspaces();
   }, []);
+
+  // useEffect(() => {
+  //   const fetchWorkspaces = async () => {
+  //     try {
+  //       const data = await getUserWorkspaces();
+  //       if (Array.isArray(data)) {
+  //         setWorkspaces(data);
+  //       } else {
+  //         setWorkspaces([]);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching workspaces:", error);
+  //       setWorkspaces([]);
+  //     }
+  //   };
+
+  //   fetchWorkspaces();
+  // }, []);
   
   
 

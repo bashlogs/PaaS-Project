@@ -13,7 +13,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const backendUrl = window._env_.REACT_APP_BACKEND_URL;
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || window._env_.REACT_APP_BACKEND_URL;
       console.log("Version: 7.0 and Backend url: ", backendUrl);
       const response = await axios.post(`${backendUrl}/submit`, form);
       setMessage(response.data.message);

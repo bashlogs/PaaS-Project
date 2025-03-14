@@ -22,10 +22,11 @@ const initialState: UserState = {
 export const fetchUserData = createAsyncThunk('user/fetchUserData', async () => {
   const response = await fetch('http://localhost:8000/dashboard', {
     method: 'GET',
-    credentials: 'include', // Ensures cookies are sent
+    credentials: 'include', 
   });
 
   if (!response.ok) {
+    console.log("Issue in fetchUserData Running")
     throw new Error('Unauthorized');
   }
 

@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: backend-config
 data:
-  MONGO_URI: "mongodb://mongodb-service:27017/test"
+  MONGO_URI: "mongodb+srv://mayur:7cehxAfCFBmrt1AY@learning.xg62wwm.mongodb.net/formDB"
   PORT: "5000" 
 
 ---
@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: bashlogs/backendapp:1.1
+          image: bashlogs/test_backend:1.0
           envFrom:
             - configMapRef:
                 name: backend-config

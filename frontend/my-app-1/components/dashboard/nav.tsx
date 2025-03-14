@@ -1,37 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { CloudIcon, LayoutDashboard, Briefcase, Settings, HelpCircle, LogOut, FolderCog } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { getUserWorkspaces, type Workspace } from "@/lib/api/workspaces"
+import { useWorkspace } from "../contexts/WorkspaceContext"
+import useLogout from "../hooks/useLogout";
 
 export function DashboardNav({ className }: { className?: string }) {
   const pathname = usePathname()
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const { workspaces, fetchWorkspaces } = useWorkspace();
+  const logout = useLogout();
 
   useEffect(() => {
-    const fetchWorkspaces = async () => {
-      try {
-        const data = await getUserWorkspaces();
-        if (Array.isArray(data)) {
-          setWorkspaces(data);
-        } else {
-          setWorkspaces([]);
-        }
-      } catch (error) {
-        console.error("Error fetching workspaces:", error);
-        setWorkspaces([]);
-      }
-    };
-
-    fetchWorkspaces();
-  }, []);
+    fetchWorkspaces(true);
+  }, [fetchWorkspaces]);
   
-  
-
   return (
     <div className={cn("border-r bg-gray-100/40 dark:bg-gray-800/40", className)}>
       <div className="flex h-full max-h-screen flex-col">
@@ -68,7 +54,7 @@ export function DashboardNav({ className }: { className?: string }) {
               <div className="px-4 py-2">
                 <h2 className="text-lg font-semibold">Workspaces</h2>
               </div>
-              {Array.isArray(workspaces) && workspaces.length > 0 ? (
+              {workspaces && workspaces.length > 0 ? (
                 workspaces.map((workspace) => (
                   <Link key={workspace.id} href={`/dashboard/workspace/${workspace.id}`} className="block">
                     <Button
@@ -111,7 +97,7 @@ export function DashboardNav({ className }: { className?: string }) {
           </nav>
         </div>
         <div className="mt-auto p-4">
-          <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-500 hover:bg-red-50">
+          <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-500 hover:bg-red-50" onClick={logout}>
             <LogOut className="mr-2 h-4 w-4" />
             Log Out
           </Button>

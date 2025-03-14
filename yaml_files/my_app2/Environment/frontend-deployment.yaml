@@ -5,7 +5,7 @@ metadata:
 data:
   config.js: |
     window._env_ = {
-      REACT_APP_BACKEND_URL: "backend-service:5000"
+      REACT_APP_BACKEND_URL: "http://backend.local"
     };
 
 ---
@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: bashlogs/frontend:6.2
+          image: bashlogs/test_frontend:1.0
           volumeMounts:
             - name: config-volume
               mountPath: /usr/share/nginx/html/config.js

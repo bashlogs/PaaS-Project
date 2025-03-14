@@ -6,11 +6,10 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 var secretKey = []byte("khadde")
-func JWT_Token(email string, password string) (string, error) {
+func JWT_Token(email string) (string, error) {
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, 
         jwt.MapClaims{ 
 			"email": email,
-			"password": password,
 			"exp": time.Now().Add(time.Hour * 720).Unix(),
         })
     tokenString, err := token.SignedString(secretKey)

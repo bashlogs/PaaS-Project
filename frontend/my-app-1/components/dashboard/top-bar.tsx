@@ -14,12 +14,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type React from "react" // Added import for React
+import { RootState, AppDispatch } from "@/store/store";
+import { fetchUserData } from "@/store/userSlice";
+import { useRouter } from "next/navigation"
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useLayoutEffect } from "react";
 
 interface TopBarProps {
   children?: React.ReactNode
 }
 
 export function TopBar({ children }: TopBarProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const { userData, isLoading, error } = useSelector((state: RootState) => state.user);
+  const router = useRouter();
+
+  useLayoutEffect(() => {
+    dispatch(fetchUserData())
+      .unwrap()
+      .then(userData => {
+        console.log("User data fetched successfully to top-bar:", userData);
+      })
+      .catch(error => {
+        console.error("Failed to fetch user data:", error);
+        router.push("/login");
+      });
+  }, [dispatch]);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center pr-4">
@@ -40,15 +61,15 @@ export function TopBar({ children }: TopBarProps) {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   {/* <AvatarImage src="/avatars/01.png" alt="User" /> */}
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarFallback>US</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">John Doe</p>
-                  <p className="text-xs leading-none text-muted-foreground">john@example.com</p>
+                  <p className="text-sm font-medium leading-none">{userData?.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{userData?.email}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -58,8 +79,6 @@ export function TopBar({ children }: TopBarProps) {
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/settings?tab=billing">Billing</Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

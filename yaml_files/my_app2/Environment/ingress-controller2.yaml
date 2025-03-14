@@ -1,15 +1,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: my-ingress
+  name: backend-ingress
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   rules:
-  - host: myapp.com
+  - host: backend.local
     http:
       paths:
-      - path: /api
+      - path: /
         pathType: Prefix
         backend:
           service:

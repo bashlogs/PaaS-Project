@@ -3,8 +3,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from "recharts"
 import { ArrowUpRight, Users, Server, Activity } from "lucide-react"
-import { useEffect, useState } from "react";
-
+import { useEffect, useState, useLayoutEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/store/store";
+import { fetchUserData } from "@/store/userSlice";
+import { useRouter } from "next/navigation"
 // Sample data for charts
 const deploymentData = [
   { name: "Jan", deployments: 4 },
@@ -26,7 +29,9 @@ const resourceUsageData = [
 ]
 
 export default function DashboardPage() {
-  const [error, setError] = useState<string | null>(null); // State to handle errors
+  const dispatch = useDispatch<AppDispatch>();
+  const { userData, isLoading, error } = useSelector((state: RootState) => state.user);
+  const router = useRouter();
 
   // useEffect(() => {
   //     // Fetch user data after token validation
@@ -54,9 +59,27 @@ export default function DashboardPage() {
   //         });
   // }, []);
 
-  if (error) {
-      return <div>{error}</div>; // Display error message
-  }
+  useLayoutEffect(() => {
+    dispatch(fetchUserData())
+      .unwrap()
+      .then(userData => {
+        console.log("User data fetched successfully for dashboard:", userData);
+      })
+      .catch(error => {
+        console.error("Failed to fetch user data:", error);
+        router.push("/login");
+      });
+  }, [dispatch]);
+
+  // useEffect(() => {
+  //   if (error === "Unauthorized") {
+  //     console.log("Unauthorized error detected, redirecting to login...");
+  //     router.push("/login");
+  //   }
+  // }, [error, router]);
+
+
+  if (isLoading) return <p>Loading...</p>;
   
   return (
     <div className="space-y-6">
