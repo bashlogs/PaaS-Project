@@ -9,11 +9,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateNamespace(clientset *kubernetes.Clientset, name string) {
+func CreateNamespace(clientset *kubernetes.Clientset, Username string, Namespace string) {
+	name := Username + "-" + Namespace
 
 	if GetNamespace(clientset, name) != nil {
 		fmt.Println("Namespace already existed")
-		ServiceAccount(clientset, name)
+		// ServiceAccount(clientset, name)
 		return
 	}
 
@@ -30,7 +31,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, name string) {
 
     fmt.Println("Namespace created successfully")
 
-	ServiceAccount(clientset, name)
+	// ServiceAccount(clientset, name)
 }
 
 func GetNamespace(clientset *kubernetes.Clientset, namespace string) *v1.Namespace {

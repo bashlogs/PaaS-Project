@@ -1,0 +1,33 @@
+{
+    "id": 12,
+    "frontend_url": "image1",
+    "port1": 5000,
+    "backend_url": "image2",
+    "port2": 3000
+}
+
+
+{
+    "username": "alice@example.com",
+    "password": "password123"
+}
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFsaWNlaiIsImV4cCI6MTc0Nzk4MDM1NX0.ZMKCjU4gZRn5iFRj7xf0z3TRY2iceIR6gpHEx6sRybk
+
+{
+    "Deployment": {
+        "name": "frontend_deployment",
+        "docker_image" : "nginx:latest",
+        "port" : 5000,
+        "config_maps" : [
+            {
+                "key" : "key1",
+                "value" : "value1"
+            },
+            {
+                "key" : "key2",
+                "value" : "value2"
+            }
+        ]
+    }
+}

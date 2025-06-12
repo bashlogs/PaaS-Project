@@ -151,3 +151,47 @@ func DeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+func UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
+    var param = api.UpdateStatus{}
+    err := json.NewDecoder(r.Body).Decode(&param)
+
+    if err != nil{
+        log.Error(err)
+        api.InternalErrorHandler(w)
+        return
+    }
+
+    database, err := tools.ConnectToDatabase()
+    if err != nil {
+        log.Error("Database connection error: ", err)
+        api.InternalErrorHandler(w)
+        return
+    }
+
+	// Delete workspace from the database
+	query := `Update namespace set active = $1 where namespace_id = $2`
+	result, err := database.DB.Exec(query, param.IsActive, param.Id)
+	if err != nil {
+		http.Error(w, "Failed to delete workspace", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		http.Error(w, "Failed to retrieve affected rows", http.StatusInternalServerError)
+		return
+	}
+
+	// Prepare response
+	response := map[string]string{}
+	if rowsAffected > 0 {
+		response["message"] = "Status updated successfully."
+	} else {
+		response["message"] = "Workspace not found."
+	}
+
+    w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+

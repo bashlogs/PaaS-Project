@@ -9,7 +9,7 @@ import { InfoSteps } from "@/components/workspace/info-steps"
 import { getUserWorkspaces, type Workspace } from "@/lib/api/workspaces"
 
 export default function WorkspacePage() {
-  const { id } = useParams() as { id: string };
+  const { id } = useParams<{ id: string }>();
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [step, setStep] = useState<"info" | "deploy">("info")
   const [deploymentFlow, setDeploymentFlow] = useState<string[]>([])
@@ -21,33 +21,47 @@ export default function WorkspacePage() {
     const controller = new AbortController();
   
     getUserWorkspaces()
-      .then((workspaces) => {
-        if (!workspaces || !Array.isArray(workspaces)) {
-          console.error("Invalid workspace response:", workspaces);
-          return;
-        }
-        const currentWorkspace = workspaces.find((w) => w.id === id);
-        if (currentWorkspace) {
-          setWorkspace(currentWorkspace);
-        } else {
-          console.error("Workspace not found for ID:", id);
-        }
-      })
-      .catch((error) => {
-        if (error.name !== "AbortError") {
-          console.error("Error fetching workspaces:", error);
-        }
-      });
-  
+    .then((workspaces) => {
+      if (!workspaces || !Array.isArray(workspaces)) {
+        console.error("Invalid workspace response:", workspaces);
+        return;
+      }
+      
+      // Convert id to number for comparison
+      const numericId = parseInt(id, 10);
+      
+      // Find the workspace with matching ID
+      const currentWorkspace = workspaces.find((w) => parseInt(w.id, 10) === numericId);
+      
+      if (currentWorkspace) {
+        setWorkspace(currentWorkspace);
+      } else {
+        console.error("Workspace not found for ID:", id);
+      }
+    })
+    .catch((error) => {
+      if (error.name !== "AbortError") {
+        console.error("Error fetching workspaces:", error);
+      }
+    });
+
     return () => controller.abort();
   }, [id]);
-  
 
   const handleNext = () => {
     setStep("deploy")
   }
 
   const handleDeploy = (frontendUrl: string, backendUrl: string) => {
+
+    // Validate URLs
+    if (!frontendUrl || !backendUrl) {
+      setLogs(["ERROR: Please provide valid Docker image URLs"])
+      return
+    }
+
+    
+
     // Simulated deployment process
     setDeploymentFlow([
       "Fetching Dockerfiles",

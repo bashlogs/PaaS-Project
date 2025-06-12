@@ -38,6 +38,22 @@ type CreateWorkspace struct {
 	Username string `json:"username"`
 }
 
+type DockerInfo struct {
+	Id int `json:"id"`
+	FrontendURL string `json:"frontend_url"`
+	BackendURL string `json:"backend_url"`
+}
+
+type KubernetesInfo struct {
+	Id int `json:"id"`
+	FrontendURL string `json:"frontend_url"`
+	Port1 int32 `json:"port1"`
+	BackendURL string `json:"backend_url"`
+	Port2 int32 `json:"port2"`
+	Namespace string `json:"namespace"`
+	Username string `json:"username"`
+}
+
 type Namespace_info struct {
     TypeName        string
     CPULimit        int
@@ -46,6 +62,25 @@ type Namespace_info struct {
     NamespaceCount  int
     TransactionDate *time.Time // Use pointer to handle NULL values
     Validity        *time.Time // Use pointer to handle NULL values
+}
+
+type ConfigMaps struct {
+	Key string `json:"key"`
+	Value string `json:"value"`
+}
+
+type DeploymentInfo struct {
+	Username string `json:"username"`
+	Namespace string `json:"namespace"`
+	Name string `json:"name"`
+	Port int32 `json:"port"`
+	Image string `json:"docker_image"`
+	ConfigMaps []ConfigMaps `json:"config_maps"`
+}
+
+type UpdateStatus struct {
+	Id int `json:"id"`
+	IsActive bool `json:"isActive"`
 }
 
 // export interface Workspace {
@@ -84,7 +119,7 @@ var (
 	ClientErrorHandler = func(w http.ResponseWriter) {
 		writeError(w, "Invalid Request", http.StatusBadRequest)
 	}
-	KubernetesErrorHandler = func(w http.ResponseWriter) {
-		writeError(w, "Kubernetes Error", http.StatusInternalServerError)
+	KubernetesErrorHandler = func(w http.ResponseWriter, err error) {
+		writeError(w, "Kubernetes Error: "+err.Error(), http.StatusInternalServerError)
 	}
 )

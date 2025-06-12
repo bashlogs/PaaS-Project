@@ -78,19 +78,18 @@ export async function createWorkspace(name: string, endpoint: string, username: 
 }
 
 export async function updateWorkspaceStatus(id: string, isActive: boolean): Promise<Workspace> {
-  const response = await fetch(`http://127.0.0.1:8000/api/workspaces/${id}`, {
-    method: "PATCH",
+  const response = await fetch(`http://localhost:8000/api/workspaces_status`, {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ isActive }),
     credentials: "include",
+    body: JSON.stringify({ id, isActive }),
   });
 
   if (!response.ok) {
     throw new Error("Failed to update workspace status");
   }
 
-  const updatedWorkspace: Workspace = await response.json();
-  invalidateWorkspaceCache(); // Invalidate cache after update
+  const updatedWorkspace = await response.json();
   return updatedWorkspace;
 }
 

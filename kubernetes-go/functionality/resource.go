@@ -12,7 +12,7 @@ import (
 
 func ResourceAllocation(clientset *kubernetes.Clientset, namespace string) {
 
-	CreateNamespace(clientset, namespace)
+	// CreateNamespace(clientset, namespace)
 
 	Quota := &v1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{

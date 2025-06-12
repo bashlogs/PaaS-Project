@@ -124,6 +124,15 @@ func Login(w http.ResponseWriter, r *http.Request){
 			return
 		}
 
+		http.SetCookie(w, &http.Cookie{
+			Name:     "authToken",
+			Value:    token,
+			Path:     "/",
+			MaxAge:   30 * 24 * 60 * 60, // 30 days
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+
 		var response = api.User_Create_Response{
 			Message: "Successfully Logined",
 			Token: token,
@@ -245,9 +254,9 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-
+	
 	var username, name string 
-	err = database.DB.QueryRow("SELECT username, name FROM users WHERE email=$1", email).Scan(&username, &name)
+	err = database.DB.QueryRow("SELECT username, name FROM users WHERE email=$1 OR username=$1", email).Scan(&username, &name)
 	if err != nil {
 		log.Error("Error retrieving user data:", err)
 		http.Error(w, "User not found", http.StatusNotFound)
