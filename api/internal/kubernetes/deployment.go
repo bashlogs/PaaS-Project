@@ -3,11 +3,15 @@ package kubernetes
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/bashlogs/PaaS_Project/api/api"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -130,7 +134,7 @@ func GetKubeNamespaceInfo(clientset *kubernetes.Clientset, namespace string) (*v
 func CreateNamespace(clientset *kubernetes.Clientset, name string) error {
 	ns, err := GetKubeNamespaceInfo(clientset, name)
 	if err == nil && ns != nil {
-		return errors.New("Namespace already existed")
+		return nil
 	}
 
     namespace := &v1.Namespace{
@@ -140,6 +144,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, name string) error {
     }
 
 	_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+
     if err != nil {
 		err := errors.New("Failed to create namespace")
 		return err
@@ -183,19 +188,56 @@ func SetResourceQuota(clientset *kubernetes.Clientset, namespace string) error {
 	return nil
 }
 
+// func RollbackDeployment(clientset *kubernetes.Clientset, namespace string) error {
+// 	err := clientset.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{})
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+
 func RollbackDeployment(clientset *kubernetes.Clientset, namespace string) error {
+	default_namespaces := []string{"default", "kube-node-lease", "kube-public", "kube-system"}
+
+	for _, names := range default_namespaces {
+		if names == namespace {
+			err := errors.New("Failed to delete default namespace")
+			return err
+		}
+	}
+
 	err := clientset.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{})
 	if err != nil {
+		err = errors.New("Failed to delete delete namespace")
 		return err
 	}
 
+	time.Sleep(5 * time.Second)
+
+	ns, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	if err != nil {
+		return nil
+	}
+
+	if ns.Status.Phase == "Terminating" {
+		ns.Spec.Finalizers = nil
+		_, err = clientset.CoreV1().Namespaces().Finalize(context.TODO(), ns, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("Namespace deleted successfully")
 	return nil
 }
 
-func SetConfigMap(clientset *kubernetes.Clientset, name string, configMaps []api.ConfigMaps) (*v1.ConfigMap, error) {
+func SetConfigMap(clientset *kubernetes.Clientset, namespace string, name string, configMaps []api.ConfigMaps) (*v1.ConfigMap, error) {
 	configMap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
+			Namespace: namespace,
 		},
 		Data: make(map[string]string),
 	}
@@ -204,101 +246,135 @@ func SetConfigMap(clientset *kubernetes.Clientset, name string, configMaps []api
 		configMap.Data[config.Key] = config.Value
 	}
 
-	_, err := clientset.CoreV1().ConfigMaps("default").Create(context.TODO(), configMap, metav1.CreateOptions{})
-	if err != nil {
-		return nil, err
+	// Corrected namespace usage here
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	if err == nil {
+		// Fetch the current ConfigMap to preserve metadata like resourceVersion
+		existing, getErr := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if getErr != nil {
+			return nil, getErr
+		}
+
+		existing.Data = configMap.Data
+
+		updated, updateErr := clientset.CoreV1().ConfigMaps(namespace).Update(context.TODO(), existing, metav1.UpdateOptions{})
+		if updateErr != nil {
+			return nil, updateErr
+		}
+
+		return updated, nil
 	}
 
-	return configMap, nil
+	// If not found, create it
+	created, createErr := clientset.CoreV1().ConfigMaps(namespace).Create(context.TODO(), configMap, metav1.CreateOptions{})
+	if createErr != nil {
+		return nil, createErr
+	}
 
+	return created, nil
 }
 
-// func SetDeployment(clientset *kubernetes.Clientset, Namespace string, name string, image string, port int32, configMap *v1.ConfigMap) error {
-// 	// Create a deployment
-// 	deployment := &v1.Deployment{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name: name,
-// 		},
-// 		Spec: v1.DeploymentSpec{
-// 			Replicas: int32Ptr(1),
-// 			Selector: &metav1.LabelSelector{
-// 				MatchLabels: map[string]string{"app": name},
-// 			},
-// 			Template: v1.PodTemplateSpec{
-// 				ObjectMeta: metav1.ObjectMeta{
-// 					Labels: map[string]string{"app": name},
-// 				},
-// 				Spec: v1.PodSpec{
-// 					Containers: []v1.Container{
-// 						{
-// 							Name:  name,
-// 							Image: image,
-// 							Ports: []v1.ContainerPort{{ContainerPort: port}},
-// 							EnvFrom: []v1.EnvFromSource{
-// 								{
-// 									ConfigMapRef: &v1.ConfigMapEnvSource{
-// 										LocalObjectReference: v1.LocalObjectReference{Name: configMap.Name},
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 	}
 
-// 	_, err := clientset.AppsV1().Deployments(Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
-//     if err != nil {
-//         fmt.Fprintf(os.Stderr, "Failed to create backend deployment: %v\n", err)
-// 		return err;
-//     }
+func SetDeployment(clientset *kubernetes.Clientset, namespace string, name string, image string, port int32, configMap *v1.ConfigMap) error {
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: int32Ptr(1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": name},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": name},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:  name,
+							Image: image,
+							Ports: []v1.ContainerPort{{ContainerPort: port}},
+							EnvFrom: []v1.EnvFromSource{
+								{
+									ConfigMapRef: &v1.ConfigMapEnvSource{
+										LocalObjectReference: v1.LocalObjectReference{Name: configMap.Name},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
-// 	return nil;
-// }
+	// Try to create the deployment
+	_, err := clientset.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	if err == nil {
+		return nil // Created successfully
+	}
 
+	// If already exists, update it
+	if k8serrors.IsAlreadyExists(err) {
+		// Get the existing deployment to preserve necessary fields
+		existing, getErr := clientset.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if getErr != nil {
+			return getErr
+		}
 
-// func SetService(clientset *kubernetes.Clientset, name string, namespace string, port int32) (int32, error) {
+		// Update relevant fields
+		existing.Spec = deployment.Spec
+
+		_, updateErr := clientset.AppsV1().Deployments(namespace).Update(context.TODO(), existing, metav1.UpdateOptions{})
+		if updateErr != nil {
+			return updateErr
+		}
+		return nil
+	}
+
+	// Return other errors
+	return err
+}
+
+func int32Ptr(i int32) *int32 { return &i }
+
+func SetService(clientset *kubernetes.Clientset, name string, namespace string, port int32) (int32, error) {
 	
-// 	servicesClient := clientset.CoreV1().Services(namespace)
+	servicesClient := clientset.CoreV1().Services(namespace)
 
-// 	// Check if the service exists
-// 	_, err := servicesClient.Get(context.TODO(), name, metav1.GetOptions{})
-// 	if err == nil {
-// 		// Service exists, delete it
-// 		fmt.Printf("Service %s already exists in namespace %s. Deleting it...\n", name, namespace)
-// 		err = servicesClient.Delete(context.TODO(), name, metav1.DeleteOptions{})
-// 		if err != nil {
-// 			fmt.Fprintf(os.Stderr, "Failed to delete existing service: %v\n", err)
-// 			return err
-// 	} else if !errors.IsNotFound(err) {
-// 	} else if !apierrors.IsNotFound(err) {
-// 		// Other error (not "not found")
-// 		fmt.Fprintf(os.Stderr, "Error checking for existing service: %v\n", err)
-// 		return err
-// 	}
+	// Check if the service exists
+	_, err := servicesClient.Get(context.TODO(), name, metav1.GetOptions{})
+	if err == nil {
+		err = servicesClient.Delete(context.TODO(), name, metav1.DeleteOptions{})
+		if err != nil {
+			err = errors.New("Failed to delete existing service")
+			return 0, err
+		}
+	}
 	
 	
-// 	service := &v1.Service{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name: name,
-// 		},
-// 		Spec: v1.ServiceSpec{
-// 			Type: v1.ServiceTypeClusterIP,
-// 			Ports: []v1.ServicePort{
-// 				{
-// 					Port: port,
-// 				},
-// 			},
-// 			Selector: map[string]string{"app": name},
-// 		},
-// 	}
+	service := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+			Namespace: namespace,
+		},
+		Spec: v1.ServiceSpec{
+			Type: v1.ServiceTypeClusterIP,
+			Ports: []v1.ServicePort{
+				{
+					Port: port,
+				},
+			},
+			Selector: map[string]string{"app": name},
+		},
+	}
 
-// 	svc, err := clientset.CoreV1().Services("default").Create(context.TODO(), service, metav1.CreateOptions{})
-// 	if err != nil {
-// 		return 0, err
-// 	}
+	svc, err := clientset.CoreV1().Services(namespace).Create(context.TODO(), service, metav1.CreateOptions{})
+	if err != nil {
+		return 0, err
+	}
 
-// 	return svc.Spec.Port, nil
-
-// }
+	return svc.Spec.Ports[0].Port, nil
+}

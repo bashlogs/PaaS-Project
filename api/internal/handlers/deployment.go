@@ -56,41 +56,50 @@ func CreateDeployment2(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// err = kubernetes.SetResourceQuota(clientset, name)
-		// if err != nil {
-		// 	log.Error("Error creating resource quota:", err)
-		// 	kubernetes.RollbackDeployment(clientset, name)
-		// 	api.KubernetesErrorHandler(w, err)
-		// 	return
-		// }
+		err = kubernetes.SetResourceQuota(clientset, name)
+		if err != nil {
+			log.Error("Error creating resource quota:", err)
+			kubernetes.RollbackDeployment(clientset, name)
+			api.KubernetesErrorHandler(w, err)
+			return
+		}
 
-		// configmap, err := kubernetes.SetConfigMap(clientset, "backend-config", dep.ConfigMaps)
-		// if err != nil {
-		// 	log.Error("Error creating backend configmap:", err)
-		// 	kubernetes.RollbackDeployment(name)
-		// 	api.KubernetesErrorHandler(w, err)
-		// 	return
-		// }
+		backendConfigMap, err := kubernetes.SetConfigMap(clientset, name, "backend-config", dep.ConfigMaps)
+		if err != nil {
+			log.Error("Error creating backend configmap:", err)
+			kubernetes.RollbackDeployment(clientset, name)
+			api.KubernetesErrorHandler(w, err)
+			return
+		}
 
-		// err = kubernetes.SetDeployment(clientset, name, dep.Name, dep.Image, dep.Port, configmap)
-		// if err != nil {
-		// 	log.Error("Error creating backend deployment:", err)
-		// 	kubernetes.RollbackDeployment(clientset, name)
-		// 	api.KubernetesErrorHandler(w, err)
-		// 	return
-		// }
+		err = kubernetes.SetDeployment(clientset, name, dep.Name, dep.Image, dep.Port, backendConfigMap)
+		if err != nil {
+			log.Error("Error creating backend deployment:", err)
+			kubernetes.RollbackDeployment(clientset, name)
+			api.KubernetesErrorHandler(w, err)
+			return
+		}
 
-		// port, err := kubernetes.SetService(clientset, dep.Name, dep.Port)
-		// if err != nil {
-		// 	log.Error("Error creating backend service:", err)
-		// 	kubernetes.RollbackDeployment(clientset, name)
-		// 	api.KubernetesErrorHandler(w, err)
-		// 	return
-		// }
+		port, err := kubernetes.SetService(clientset, dep.Name, name, dep.Port)
+		if err != nil {
+			log.Error("Error creating backend service:", err)
+			kubernetes.RollbackDeployment(clientset, name)
+			api.KubernetesErrorHandler(w, err)
+			return
+		}
 
-		// if dep, ok := deployments["frontend_deployment"]; ok {
-		// 	dep.ConfigMaps = append("backend-service", port)
-		// }
+		if dep, ok := deployments["frontend_deployment"]; ok {
+			dep.ConfigMaps = append(dep.ConfigMaps, api.ConfigMaps{
+				Key:   "backend-service",
+				Value: fmt.Sprintf("%d", port),
+			})
+		}
+
+		fmt.Println("Deployment created successfully")
+		fmt.Println(dep)
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte("Deployment created successfully"))
+		return
 	}
 
 	// if dep, ok := deployments["frontend_deployment"]; ok {
